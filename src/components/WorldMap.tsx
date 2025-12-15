@@ -7,7 +7,7 @@ interface WorldMapProps {
   colors: any;
 }
 
-// Simplified world map using regional blocks
+// World map that resembles actual geographic layout
 export const WorldMap: React.FC<WorldMapProps> = ({ countries, colors }) => {
   const getRegionStats = (region: string) => {
     const regionCountries = countries.filter((c) => c.region === region);
@@ -30,13 +30,22 @@ export const WorldMap: React.FC<WorldMapProps> = ({ countries, colors }) => {
     return colors.borderLight;
   };
 
-  const renderRegion = (region: string, style: any, label?: string) => {
-    const stats = getRegionStats(region);
+  const renderRegion = (region: string, additionalStyles?: any) => {
     const color = getRegionColor(region);
+    const stats = getRegionStats(region);
 
     return (
-      <View style={[style, { backgroundColor: color, borderColor: colors.border }]}>
-        {label && stats.visited > 0 && (
+      <View
+        style={[
+          styles.region,
+          {
+            backgroundColor: color,
+            borderColor: colors.border
+          },
+          additionalStyles
+        ]}
+      >
+        {stats.visited > 0 && (
           <Text style={styles.regionLabel}>{stats.visited}</Text>
         )}
       </View>
@@ -45,49 +54,77 @@ export const WorldMap: React.FC<WorldMapProps> = ({ countries, colors }) => {
 
   return (
     <View style={styles.mapContainer}>
-      {/* World Map Grid */}
-      <View style={styles.worldGrid}>
-        {/* Row 1 - Northern regions */}
-        <View style={styles.row}>
-          {renderRegion('Northern Europe', styles.northernEurope, '1')}
-          {renderRegion('Eastern Europe', styles.easternEurope, '2')}
-          {renderRegion('Northern Asia', styles.northernAsia, '3')}
+      {/* World Map - Geographic Layout */}
+      <View style={styles.worldMap}>
+        {/* Row 1: Northern regions (Arctic) */}
+        <View style={styles.mapRow}>
+          <View style={styles.spacer} />
+          {renderRegion('Northern America', { width: 90, height: 35 })}
+          <View style={styles.spacer} />
+          {renderRegion('Northern Europe', { width: 50, height: 35 })}
+          {renderRegion('Northern Asia', { width: 110, height: 35 })}
         </View>
 
-        {/* Row 2 - Mid-latitude regions */}
-        <View style={styles.row}>
-          {renderRegion('Western Europe', styles.westernEurope, '4')}
-          {renderRegion('Southern Europe', styles.southernEurope, '5')}
-          {renderRegion('Western Asia', styles.westernAsia, '6')}
-          {renderRegion('Central Asia', styles.centralAsia, '7')}
-          {renderRegion('Eastern Asia', styles.easternAsia, '8')}
+        {/* Row 2: North temperate - Americas left, Eurasia right */}
+        <View style={styles.mapRow}>
+          {renderRegion('Northern America', { width: 100, height: 50 })}
+          <View style={{ width: 30 }} />
+          {renderRegion('Western Europe', { width: 40, height: 50 })}
+          {renderRegion('Eastern Europe', { width: 50, height: 50 })}
+          {renderRegion('Central Asia', { width: 60, height: 50 })}
+          {renderRegion('Eastern Asia', { width: 70, height: 50 })}
         </View>
 
-        {/* Row 3 - Africa and South Asia */}
-        <View style={styles.row}>
-          {renderRegion('Northern Africa', styles.northernAfrica, '9')}
-          {renderRegion('Western Africa', styles.westernAfrica, '10')}
-          {renderRegion('Eastern Africa', styles.easternAfrica, '11')}
-          {renderRegion('Southern Asia', styles.southernAsia, '12')}
-          {renderRegion('Southeastern Asia', styles.southeasternAsia, '13')}
+        {/* Row 3: Mid-latitude - Caribbean, Mediterranean, Middle East, Asia */}
+        <View style={styles.mapRow}>
+          {renderRegion('Central America', { width: 35, height: 40 })}
+          {renderRegion('Caribbean', { width: 40, height: 40 })}
+          <View style={{ width: 20 }} />
+          {renderRegion('Southern Europe', { width: 50, height: 40 })}
+          {renderRegion('Western Asia', { width: 50, height: 40 })}
+          {renderRegion('Southern Asia', { width: 60, height: 40 })}
+          {renderRegion('Eastern Asia', { width: 50, height: 40 })}
         </View>
 
-        {/* Row 4 - Southern regions */}
-        <View style={styles.row}>
-          {renderRegion('Southern Africa', styles.southernAfrica, '14')}
-          {renderRegion('Australia and Oceania', styles.oceania, '15')}
+        {/* Row 4: Tropics - Africa and Southeast Asia */}
+        <View style={styles.mapRow}>
+          {renderRegion('South America', { width: 70, height: 55 })}
+          <View style={{ width: 30 }} />
+          {renderRegion('Northern Africa', { width: 80, height: 55 })}
+          {renderRegion('Western Asia', { width: 40, height: 55 })}
+          {renderRegion('Southern Asia', { width: 50, height: 55 })}
+          {renderRegion('Southeastern Asia', { width: 70, height: 55 })}
         </View>
 
-        {/* Row 5 - Americas */}
-        <View style={styles.row}>
-          {renderRegion('Northern America', styles.northernAmerica, '16')}
-          {renderRegion('Central America', styles.centralAmerica, '17')}
-          {renderRegion('Caribbean', styles.caribbean, '18')}
+        {/* Row 5: Central Africa and Indonesia/Philippines */}
+        <View style={styles.mapRow}>
+          {renderRegion('South America', { width: 65, height: 50 })}
+          <View style={{ width: 35 }} />
+          {renderRegion('Western Africa', { width: 60, height: 50 })}
+          {renderRegion('Central Africa', { width: 70, height: 50 })}
+          {renderRegion('Eastern Africa', { width: 60, height: 50 })}
+          <View style={{ width: 20 }} />
+          {renderRegion('Southeastern Asia', { width: 55, height: 50 })}
         </View>
 
-        {/* Row 6 - South America */}
-        <View style={styles.row}>
-          {renderRegion('South America', styles.southAmerica, '19')}
+        {/* Row 6: Southern Africa and Australia */}
+        <View style={styles.mapRow}>
+          {renderRegion('South America', { width: 55, height: 45 })}
+          <View style={{ width: 60 }} />
+          {renderRegion('Southern Africa', { width: 60, height: 45 })}
+          {renderRegion('Eastern Africa', { width: 50, height: 45 })}
+          <View style={{ width: 50 }} />
+          {renderRegion('Australia and Oceania', { width: 90, height: 45 })}
+        </View>
+
+        {/* Row 7: Southern tip */}
+        <View style={styles.mapRow}>
+          <View style={styles.spacer} />
+          {renderRegion('South America', { width: 40, height: 35 })}
+          <View style={{ width: 80 }} />
+          {renderRegion('Southern Africa', { width: 45, height: 35 })}
+          <View style={{ width: 120 }} />
+          {renderRegion('Australia and Oceania', { width: 70, height: 35 })}
         </View>
       </View>
 
@@ -112,192 +149,44 @@ export const WorldMap: React.FC<WorldMapProps> = ({ countries, colors }) => {
 
 const styles = StyleSheet.create({
   mapContainer: {
-    padding: 16,
+    padding: 8,
     alignItems: 'center',
   },
-  worldGrid: {
+  worldMap: {
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 500,
+    alignItems: 'center',
   },
-  row: {
+  mapRow: {
     flexDirection: 'row',
-    marginBottom: 4,
-  },
-  // Region styles - sizes approximate geographic area
-  northernEurope: {
-    flex: 2,
-    height: 30,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
+    marginBottom: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  easternEurope: {
-    flex: 2,
-    height: 30,
-    marginRight: 4,
-    borderRadius: 4,
+  region: {
+    borderRadius: 6,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 1,
   },
-  northernAsia: {
-    flex: 4,
-    height: 30,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  westernEurope: {
-    flex: 1.5,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  southernEurope: {
-    flex: 1.5,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  westernAsia: {
-    flex: 1.5,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centralAsia: {
-    flex: 2,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  easternAsia: {
-    flex: 2,
-    height: 35,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  northernAfrica: {
-    flex: 2,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  westernAfrica: {
-    flex: 1.5,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  easternAfrica: {
-    flex: 1.5,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  southernAsia: {
-    flex: 2,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  southeasternAsia: {
-    flex: 2,
-    height: 35,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  southernAfrica: {
-    flex: 2,
-    height: 35,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  oceania: {
-    flex: 3,
-    height: 35,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  northernAmerica: {
-    flex: 3,
-    height: 40,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centralAmerica: {
-    flex: 1,
-    height: 40,
-    marginRight: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  caribbean: {
-    flex: 1,
-    height: 40,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  southAmerica: {
-    flex: 2,
-    height: 45,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  spacer: {
+    width: 40,
   },
   regionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     color: '#fff',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   legend: {
     flexDirection: 'row',
     marginTop: 20,
     gap: 16,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   legendItem: {
     flexDirection: 'row',
