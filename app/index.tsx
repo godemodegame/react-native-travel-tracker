@@ -10,21 +10,24 @@ import {
   SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
-import { CountryWithStatus, CountryStatus, VisitDate } from '../src/types';
+import { CountryWithStatus, CountryStatus, VisitDate, Visa } from '../src/types';
 import { countries } from '../src/data/countries';
 import { CountryCard } from '../src/components/CountryCard';
 import { DateModal } from '../src/components/DateModal';
+import { VisaModal } from '../src/components/VisaModal';
+import { CountrySelector } from '../src/components/CountrySelector';
 import { HistoryScreen } from '../src/screens/HistoryScreen';
 import { CountryDetailScreen } from '../src/screens/CountryDetailScreen';
 import { StatsScreen } from '../src/screens/StatsScreen';
-import { mockCountryStatuses, mockVisitDates } from '../src/data/mockTravelData';
+import { VisasScreen } from '../src/screens/VisasScreen';
+import { mockCountryStatuses, mockVisitDates, mockVisas } from '../src/data/mockTravelData';
 import { useTheme } from '../src/theme/ThemeContext';
 import { storage } from '../src/utils/storage';
 import { exportToCSV, importFromCSV, ExportData } from '../src/utils/csvExport';
 import { Alert, Platform } from 'react-native';
 
 type TabType = 'all' | 'visited' | 'wishlist';
-type ScreenType = 'countries' | 'history' | 'stats';
+type ScreenType = 'countries' | 'history' | 'stats' | 'visas';
 
 // Use mock data only in development mode
 const isDevelopment = __DEV__;
@@ -34,12 +37,15 @@ export default function Index() {
 
   const [countryStatuses, setCountryStatuses] = useState<Record<string, CountryStatus>>({});
   const [visitDates, setVisitDates] = useState<Record<string, VisitDate[]>>({});
+  const [visas, setVisas] = useState<Visa[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [activeScreen, setActiveScreen] = useState<ScreenType>('countries');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
   const [isDateModalVisible, setIsDateModalVisible] = useState(false);
+  const [isVisaModalVisible, setIsVisaModalVisible] = useState(false);
+  const [isCountrySelectorVisible, setIsCountrySelectorVisible] = useState(false);
   const [showCountryDetail, setShowCountryDetail] = useState(false);
 
   // Load data from storage on mount
@@ -58,12 +64,14 @@ export default function Index() {
         } else if (isDevelopment) {
           setCountryStatuses(mockCountryStatuses);
           setVisitDates(mockVisitDates);
+          setVisas(mockVisas);
         }
       } catch (error) {
         console.error('Error loading data:', error);
         if (isDevelopment) {
           setCountryStatuses(mockCountryStatuses);
           setVisitDates(mockVisitDates);
+          setVisas(mockVisas);
         }
       } finally {
         setIsLoading(false);
@@ -135,6 +143,28 @@ export default function Index() {
         (visit) => visit.id !== dateId
       ),
     }));
+  };
+
+  const handleAddVisa = () => {
+    setIsCountrySelectorVisible(true);
+  };
+
+  const handleCountrySelected = (countryCode: string) => {
+    setSelectedCountryCode(countryCode);
+    setIsVisaModalVisible(true);
+  };
+
+  const handleSaveVisa = (visa: Omit<Visa, 'id'>) => {
+    const newVisa: Visa = {
+      ...visa,
+      id: Date.now().toString(),
+    };
+
+    setVisas((prev) => [...prev, newVisa]);
+  };
+
+  const handleDeleteVisa = (visaId: string) => {
+    setVisas((prev) => prev.filter((v) => v.id !== visaId));
   };
 
   const handleExportCSV = async () => {
@@ -319,6 +349,18 @@ export default function Index() {
           <StatsScreen
             countries={countriesWithStatus}
             onClose={() => setActiveScreen('countries')}
+            onExport={handleExportCSV}
+            onImport={handleImportCSV}
+          />
+        );
+      case 'visas':
+        return (
+          <VisasScreen
+            visas={visas}
+            countries={countriesWithStatus}
+            onClose={() => setActiveScreen('countries')}
+            onAddVisa={handleAddVisa}
+            onDeleteVisa={handleDeleteVisa}
           />
         );
       case 'countries':
@@ -452,6 +494,25 @@ export default function Index() {
 
         <TouchableOpacity
           style={styles.tabBarItem}
+          onPress={() => setActiveScreen('visas')}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabBarIcon,
+            activeScreen === 'visas' && styles.tabBarIconActive
+          ]}>
+            🛂
+          </Text>
+          <Text style={[
+            styles.tabBarLabel,
+            activeScreen === 'visas' && styles.tabBarLabelActive
+          ]}>
+            Visas
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.tabBarItem}
           onPress={() => setActiveScreen('stats')}
           activeOpacity={0.7}
         >
@@ -479,6 +540,27 @@ export default function Index() {
           onClose={() => setIsDateModalVisible(false)}
           onAddDate={handleAddDate}
           onDeleteDate={handleDeleteDate}
+        />
+      )}
+
+      {/* Country Selector */}
+      <CountrySelector
+        visible={isCountrySelectorVisible}
+        countries={countries}
+        onClose={() => setIsCountrySelectorVisible(false)}
+        onSelect={handleCountrySelected}
+      />
+
+      {/* Visa Modal */}
+      {selectedCountryCode && (
+        <VisaModal
+          visible={isVisaModalVisible}
+          countryCode={selectedCountryCode}
+          countryName={
+            countriesWithStatus.find((c) => c.code === selectedCountryCode)?.name || ''
+          }
+          onClose={() => setIsVisaModalVisible(false)}
+          onSave={handleSaveVisa}
         />
       )}
     </SafeAreaView>

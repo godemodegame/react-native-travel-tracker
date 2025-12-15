@@ -13,9 +13,11 @@ import { useTheme } from '../theme/ThemeContext';
 interface StatsScreenProps {
   countries: CountryWithStatus[];
   onClose?: () => void;
+  onExport?: () => Promise<void>;
+  onImport?: (fileOrUri: File | string) => Promise<void>;
 }
 
-export const StatsScreen: React.FC<StatsScreenProps> = ({ countries, onClose }) => {
+export const StatsScreen: React.FC<StatsScreenProps> = ({ countries, onClose, onExport, onImport }) => {
   const { colors } = useTheme();
 
   const stats = useMemo(() => {

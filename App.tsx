@@ -10,20 +10,21 @@ import {
   TextInput,
   SafeAreaView,
 } from 'react-native';
-import { CountryWithStatus, CountryStatus, VisitDate } from './src/types';
+import { CountryWithStatus, CountryStatus, VisitDate, Visa } from './src/types';
 import { countries } from './src/data/countries';
 import { CountryCard } from './src/components/CountryCard';
 import { DateModal } from './src/components/DateModal';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { CountryDetailScreen } from './src/screens/CountryDetailScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
-import { mockCountryStatuses, mockVisitDates } from './src/data/mockTravelData';
+import { VisasScreen } from './src/screens/VisasScreen';
+import { mockCountryStatuses, mockVisitDates, mockVisas } from './src/data/mockTravelData';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { exportToCSV, importFromCSV, ExportData } from './src/utils/csvExport';
 import { Alert, Platform } from 'react-native';
 
 type TabType = 'all' | 'visited' | 'wishlist';
-type ScreenType = 'countries' | 'history' | 'stats';
+type ScreenType = 'countries' | 'history' | 'stats' | 'visas';
 
 // Use mock data only in development mode
 const isDevelopment = __DEV__;
@@ -36,6 +37,9 @@ function AppContent() {
   );
   const [visitDates, setVisitDates] = useState<Record<string, VisitDate[]>>(
     isDevelopment ? mockVisitDates : {}
+  );
+  const [visas, setVisas] = useState<Visa[]>(
+    isDevelopment ? mockVisas : []
   );
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [activeScreen, setActiveScreen] = useState<ScreenType>('countries');
@@ -95,13 +99,19 @@ function AppContent() {
   };
 
   const handleExportCSV = async () => {
+    console.log('handleExportCSV called');
     try {
       const exportData: ExportData = {
         countryStatuses,
         visitDates,
       };
+      console.log('Export data prepared:', {
+        countriesCount: Object.keys(exportData.countryStatuses).length,
+        visitsCount: Object.keys(exportData.visitDates).length
+      });
 
       const success = await exportToCSV(exportData);
+      console.log('Export result:', success);
       if (success) {
         if (Platform.OS === 'web') {
           alert('Travel history exported successfully!');
@@ -276,6 +286,14 @@ function AppContent() {
             onImport={handleImportCSV}
           />
         );
+      case 'visas':
+        return (
+          <VisasScreen
+            visas={visas}
+            countries={countriesWithStatus}
+            onClose={() => setActiveScreen('countries')}
+          />
+        );
       case 'countries':
       default:
         return renderCountriesScreen();
@@ -389,6 +407,25 @@ function AppContent() {
             activeScreen === 'history' && styles.tabBarLabelActive
           ]}>
             History
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.tabBarItem}
+          onPress={() => setActiveScreen('visas')}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabBarIcon,
+            activeScreen === 'visas' && styles.tabBarIconActive
+          ]}>
+            🛂
+          </Text>
+          <Text style={[
+            styles.tabBarLabel,
+            activeScreen === 'visas' && styles.tabBarLabelActive
+          ]}>
+            Visas
           </Text>
         </TouchableOpacity>
 
