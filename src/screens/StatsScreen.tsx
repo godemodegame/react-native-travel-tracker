@@ -188,7 +188,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ countries, onClose }) 
                 <View
                   style={[
                     styles.progressFill,
-                    { width: `${region.percentage}%` },
+                    { width: `${region.percentage}%` as any },
                   ]}
                 />
               </View>

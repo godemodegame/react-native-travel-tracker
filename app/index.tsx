@@ -20,6 +20,8 @@ import { StatsScreen } from '../src/screens/StatsScreen';
 import { mockCountryStatuses, mockVisitDates } from '../src/data/mockTravelData';
 import { useTheme } from '../src/theme/ThemeContext';
 import { storage } from '../src/utils/storage';
+import { exportToCSV, importFromCSV, ExportData } from '../src/utils/csvExport';
+import { Alert, Platform } from 'react-native';
 
 type TabType = 'all' | 'visited' | 'wishlist';
 type ScreenType = 'countries' | 'history' | 'stats';
@@ -135,6 +137,92 @@ export default function Index() {
     }));
   };
 
+  const handleExportCSV = async () => {
+    console.log('handleExportCSV called');
+    try {
+      const exportData: ExportData = {
+        countryStatuses,
+        visitDates,
+      };
+      console.log('Export data prepared:', {
+        countriesCount: Object.keys(exportData.countryStatuses).length,
+        visitsCount: Object.keys(exportData.visitDates).length
+      });
+
+      const success = await exportToCSV(exportData);
+      console.log('Export result:', success);
+      if (!success) {
+        if (Platform.OS === 'web') {
+          alert('Failed to export travel history');
+        } else {
+          Alert.alert('Error', 'Failed to export travel history');
+        }
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      if (Platform.OS === 'web') {
+        alert('Failed to export travel history');
+      } else {
+        Alert.alert('Error', 'Failed to export travel history');
+      }
+    }
+  };
+
+  const handleImportCSV = async (fileOrUri: File | string) => {
+    console.log('handleImportCSV called with:', fileOrUri);
+    try {
+      const importedData = await importFromCSV(fileOrUri);
+      console.log('Import result:', importedData);
+
+      if (importedData) {
+        if (Platform.OS === 'web') {
+          const confirmed = confirm(
+            'This will replace your current travel data. Do you want to continue?'
+          );
+          if (!confirmed) return;
+        } else {
+          Alert.alert(
+            'Confirm Import',
+            'This will replace your current travel data. Do you want to continue?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Import',
+                style: 'destructive',
+                onPress: () => {
+                  setCountryStatuses(importedData.countryStatuses);
+                  setVisitDates(importedData.visitDates);
+                  Alert.alert('Success', 'Travel history imported successfully!');
+                },
+              },
+            ]
+          );
+          return;
+        }
+
+        setCountryStatuses(importedData.countryStatuses);
+        setVisitDates(importedData.visitDates);
+
+        if (Platform.OS === 'web') {
+          alert('Travel history imported successfully!');
+        }
+      } else {
+        if (Platform.OS === 'web') {
+          alert('Failed to import travel history. Please check the CSV file format.');
+        } else {
+          Alert.alert('Error', 'Failed to import travel history. Please check the CSV file format.');
+        }
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      if (Platform.OS === 'web') {
+        alert('Failed to import travel history');
+      } else {
+        Alert.alert('Error', 'Failed to import travel history');
+      }
+    }
+  };
+
   const selectedCountry = countriesWithStatus.find(
     (c) => c.code === selectedCountryCode
   );
@@ -222,6 +310,8 @@ export default function Index() {
           <HistoryScreen
             countries={countriesWithStatus}
             onClose={() => setActiveScreen('countries')}
+            onExport={handleExportCSV}
+            onImport={handleImportCSV}
           />
         );
       case 'stats':

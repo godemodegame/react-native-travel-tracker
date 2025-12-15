@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,10 +6,12 @@ import {
   FlatList,
   SafeAreaView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { CountryWithStatus, VisitDate, TransportationType } from '../types';
 import { formatVisitDate } from '../utils/dateFormatter';
 import { useTheme } from '../theme/ThemeContext';
+import * as DocumentPicker from 'expo-document-picker';
 
 const TRANSPORTATION_INFO: Record<TransportationType, { label: string; emoji: string }> = {
   plane: { label: 'Plane', emoji: '✈️' },
@@ -21,6 +23,8 @@ const TRANSPORTATION_INFO: Record<TransportationType, { label: string; emoji: st
 interface HistoryScreenProps {
   countries: CountryWithStatus[];
   onClose?: () => void;
+  onExport?: () => void;
+  onImport?: (fileOrUri: File | string) => void;
 }
 
 interface HistoryEntry {
@@ -37,8 +41,14 @@ const getDateForSorting = (date: { year: number; month?: number; day?: number })
   return new Date(date.year, (date.month || 1) - 1, date.day || 1);
 };
 
-export const HistoryScreen: React.FC<HistoryScreenProps> = ({ countries, onClose }) => {
+export const HistoryScreen: React.FC<HistoryScreenProps> = ({
+  countries,
+  onClose,
+  onExport,
+  onImport
+}) => {
   const { colors } = useTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const historyEntries = useMemo(() => {
     const entries: HistoryEntry[] = [];
@@ -65,6 +75,43 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ countries, onClose
 
   const totalVisits = historyEntries.length;
   const uniqueCountries = new Set(historyEntries.map((e) => e.countryCode)).size;
+
+  const handleExportPress = () => {
+    if (onExport) {
+      onExport();
+    }
+  };
+
+  const handleImportPress = async () => {
+    if (!onImport) return;
+
+    if (Platform.OS === 'web') {
+      fileInputRef.current?.click();
+    } else {
+      try {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: 'text/csv',
+          copyToCacheDirectory: true,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          onImport(result.assets[0].uri);
+        }
+      } catch (error) {
+        console.error('Error picking document:', error);
+      }
+    }
+  };
+
+  const handleWebFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onImport) {
+      onImport(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const renderHistoryItem = ({ item }: { item: HistoryEntry }) => {
     const transportInfo = item.visit.transportation
@@ -124,21 +171,58 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ countries, onClose
       </View>
 
       {/* Timeline */}
-      {historyEntries.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No travel history yet</Text>
-          <Text style={styles.emptySubtext}>
-            Mark countries as visited and add dates to see your timeline
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={historyEntries}
-          keyExtractor={(item) => item.id}
-          renderItem={renderHistoryItem}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
+      <FlatList
+        data={historyEntries}
+        keyExtractor={(item) => item.id}
+        renderItem={renderHistoryItem}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No travel history yet</Text>
+            <Text style={styles.emptySubtext}>
+              Mark countries as visited and add dates to see your timeline, or import your existing data
+            </Text>
+          </View>
+        }
+        ListFooterComponent={
+          <View style={styles.footerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.footerTitle}>Data Management</Text>
+            <Text style={styles.footerDescription}>
+              Export your travel history to CSV or import from a previously exported file.
+            </Text>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.exportButton}
+                onPress={handleExportPress}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.buttonText}>📤 Export CSV</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.importButton}
+                onPress={handleImportPress}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.buttonText}>📥 Import CSV</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Hidden file input for web */}
+            {Platform.OS === 'web' && (
+              <input
+                ref={fileInputRef as any}
+                type="file"
+                accept=".csv"
+                onChange={handleWebFileSelect as any}
+                style={{ display: 'none' }}
+              />
+            )}
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 };
@@ -267,5 +351,53 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  footerContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginBottom: 20,
+  },
+  footerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  footerDescription: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  exportButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  importButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
