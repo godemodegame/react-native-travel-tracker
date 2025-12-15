@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import { CountryWithStatus, CountryStatus, VisitDate } from '../src/types';
 import { countries } from '../src/data/countries';
@@ -18,6 +19,7 @@ import { CountryDetailScreen } from '../src/screens/CountryDetailScreen';
 import { StatsScreen } from '../src/screens/StatsScreen';
 import { mockCountryStatuses, mockVisitDates } from '../src/data/mockTravelData';
 import { useTheme } from '../src/theme/ThemeContext';
+import { storage } from '../src/utils/storage';
 
 type TabType = 'all' | 'visited' | 'wishlist';
 type ScreenType = 'countries' | 'history' | 'stats';
@@ -28,18 +30,60 @@ const isDevelopment = __DEV__;
 export default function Index() {
   const { colors, isDark } = useTheme();
 
-  const [countryStatuses, setCountryStatuses] = useState<Record<string, CountryStatus>>(
-    isDevelopment ? mockCountryStatuses : {}
-  );
-  const [visitDates, setVisitDates] = useState<Record<string, VisitDate[]>>(
-    isDevelopment ? mockVisitDates : {}
-  );
+  const [countryStatuses, setCountryStatuses] = useState<Record<string, CountryStatus>>({});
+  const [visitDates, setVisitDates] = useState<Record<string, VisitDate[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [activeScreen, setActiveScreen] = useState<ScreenType>('countries');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
   const [isDateModalVisible, setIsDateModalVisible] = useState(false);
   const [showCountryDetail, setShowCountryDetail] = useState(false);
+
+  // Load data from storage on mount
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [savedStatuses, savedDates] = await Promise.all([
+          storage.loadCountryStatuses(),
+          storage.loadVisitDates(),
+        ]);
+
+        // Use saved data if available, otherwise use mock data in development
+        if (Object.keys(savedStatuses).length > 0 || Object.keys(savedDates).length > 0) {
+          setCountryStatuses(savedStatuses);
+          setVisitDates(savedDates);
+        } else if (isDevelopment) {
+          setCountryStatuses(mockCountryStatuses);
+          setVisitDates(mockVisitDates);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        if (isDevelopment) {
+          setCountryStatuses(mockCountryStatuses);
+          setVisitDates(mockVisitDates);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  // Save country statuses when they change
+  useEffect(() => {
+    if (!isLoading) {
+      storage.saveCountryStatuses(countryStatuses);
+    }
+  }, [countryStatuses, isLoading]);
+
+  // Save visit dates when they change
+  useEffect(() => {
+    if (!isLoading) {
+      storage.saveVisitDates(visitDates);
+    }
+  }, [visitDates, isLoading]);
 
   const countriesWithStatus: CountryWithStatus[] = useMemo(() => {
     return countries.map((country) => ({
@@ -256,6 +300,19 @@ export default function Index() {
     </>
   );
 
+  // Show loading indicator while data is loading
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style={isDark ? "light" : "dark"} />
@@ -342,6 +399,17 @@ const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 17,
+    color: colors.textSecondary,
   },
   header: {
     backgroundColor: colors.background,
