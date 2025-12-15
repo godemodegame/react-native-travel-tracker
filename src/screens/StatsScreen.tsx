@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { CountryWithStatus } from '../types';
 import { useTheme } from '../theme/ThemeContext';
+import { WorldMap } from '../components/WorldMap';
 
 interface StatsScreenProps {
   countries: CountryWithStatus[];
@@ -101,6 +102,12 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ countries, onClose }) 
       </View>
 
       <ScrollView style={styles.content}>
+        {/* World Map */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>World Map</Text>
+          <WorldMap countries={countries} colors={colors} />
+        </View>
+
         {/* Overview */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Overview</Text>
