@@ -52,15 +52,17 @@ export default function Index() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [savedStatuses, savedDates] = await Promise.all([
+        const [savedStatuses, savedDates, savedVisas] = await Promise.all([
           storage.loadCountryStatuses(),
           storage.loadVisitDates(),
+          storage.loadVisas(),
         ]);
 
         // Use saved data if available, otherwise use mock data in development
-        if (Object.keys(savedStatuses).length > 0 || Object.keys(savedDates).length > 0) {
+        if (Object.keys(savedStatuses).length > 0 || Object.keys(savedDates).length > 0 || savedVisas.length > 0) {
           setCountryStatuses(savedStatuses);
           setVisitDates(savedDates);
+          setVisas(savedVisas);
         } else if (isDevelopment) {
           setCountryStatuses(mockCountryStatuses);
           setVisitDates(mockVisitDates);
@@ -94,6 +96,13 @@ export default function Index() {
       storage.saveVisitDates(visitDates);
     }
   }, [visitDates, isLoading]);
+
+  // Save visas when they change
+  useEffect(() => {
+    if (!isLoading) {
+      storage.saveVisas(visas);
+    }
+  }, [visas, isLoading]);
 
   const countriesWithStatus: CountryWithStatus[] = useMemo(() => {
     return countries.map((country) => ({

@@ -1,9 +1,10 @@
 import { Platform } from 'react-native';
-import { CountryStatus, VisitDate } from '../types';
+import { CountryStatus, VisitDate, Visa } from '../types';
 
 const STORAGE_KEYS = {
   COUNTRY_STATUSES: '@travel_tracker:country_statuses',
   VISIT_DATES: '@travel_tracker:visit_dates',
+  VISAS: '@travel_tracker:visas',
 };
 
 // Web storage implementation using localStorage
@@ -86,12 +87,33 @@ export const storage = {
     }
   },
 
+  // Save visas
+  async saveVisas(visas: Visa[]): Promise<void> {
+    try {
+      await storageAdapter.setItem(STORAGE_KEYS.VISAS, JSON.stringify(visas));
+    } catch (error) {
+      console.error('Error saving visas:', error);
+    }
+  },
+
+  // Load visas
+  async loadVisas(): Promise<Visa[]> {
+    try {
+      const data = await storageAdapter.getItem(STORAGE_KEYS.VISAS);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error loading visas:', error);
+      return [];
+    }
+  },
+
   // Clear all data
   async clearAll(): Promise<void> {
     try {
       await storageAdapter.multiRemove([
         STORAGE_KEYS.COUNTRY_STATUSES,
         STORAGE_KEYS.VISIT_DATES,
+        STORAGE_KEYS.VISAS,
       ]);
     } catch (error) {
       console.error('Error clearing storage:', error);
