@@ -9,6 +9,7 @@ A React Native application for tracking countries you've visited, built with Exp
 - 🚂 Track transportation methods (plane, train, car, bus)
 - 📊 Comprehensive statistics and analytics
 - 📖 Travel history timeline
+- 💾 Persistent data storage (AsyncStorage)
 - 🌗 Automatic dark/light theme based on system preferences
 - 🎨 Native iOS design patterns
 
@@ -75,8 +76,10 @@ src/
 
 - React Native
 - Expo
+- Expo Router (for navigation and static export)
 - TypeScript
 - React Context API (for theme management)
+- AsyncStorage (for data persistence)
 
 ## License
 
